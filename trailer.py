@@ -1,5 +1,6 @@
 import json
 
+
 def get_key(response_text: str, platform: str = "youtube", allowed_langs: list[str] = ["de", "en"]) -> str:
     try:
         data = json.loads(response_text)

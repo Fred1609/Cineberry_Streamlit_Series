@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Dieses Skript liest Seriendaten aus CSV-Dateien, ruft ergänzende
 Informationen von Wikipedia und The Movie Database (TMDB) ab und
-indexiert alles mit Tantivy, um eine durchsuchbare Volltext-Indizestruktur
-zu erstellen.
+indexiert alles mit Tantivy.
 
 Hauptschritte:
 1) Schema für den Tantivy-Index definieren.
@@ -26,6 +24,7 @@ import requests
 import os
 from itertools import islice
 from dotenv import load_dotenv
+import trailer
 
 
 # Basis-URLs für TMDB-Requests
@@ -33,16 +32,16 @@ TMDB_API = "https://api.themoviedb.org/3/find/"
 TMDB_TRAILER_API = "https://api.themoviedb.org/3/tv/"
 SOURCE = "?external_source=imdb_id"  # Parameter, um via IMDb-ID zu suchen
 
-#Umgebungsvariablen laden
+# Umgebungsvariablen laden
 load_dotenv()
 
-# HTTP-Header inkl. Bearer-Token für TMDB (siehe Sicherheitshinweis oben)
+# HTTP-Header inkl. Anfrage-Token für TMDB
 headers = {
     "accept": "application/json",
     "Authorization": os.getenv('TMDB_API_KEY')
 }
 
-# === 1) Schema für den Index definieren ===
+# 1) Schema für den Tantivy-Index definieren.
 # Textfelder
 schema_builder = SchemaBuilder()
 schema_builder.add_text_field("wikidata", stored=True)
@@ -77,8 +76,8 @@ schema_builder.add_facet_field("facet_genres")
 # Schema finalisieren
 schema = schema_builder.build()
 
-# === 2) Index anlegen/öffnen ===
-index_path = "neu"  # Relativer Pfad für das Index-Verzeichnis
+# 2) Index-Verzeichnis erstellen und Writer initialisieren.
+index_path = "serien_300"  # Relativer Pfad für das Index-Verzeichnis
 if not os.path.exists(index_path):
     os.makedirs(index_path)
     print(f"Der {index_path}-Ordner wurde angelegt.")
@@ -89,18 +88,18 @@ index_path = pathlib.Path(index_path)
 index = Index(schema, path=str(index_path))
 writer = index.writer()  # Writer für Batch-Schreibvorgänge
 
-# === 3) Wikipedia-Client mit Session und User-Agent ===
+# 3) Wikipedia‑Client mit benutzerdefiniertem User‑Agent aufsetzen.
 custom_user_agent = "MyWikipediaBot/1.0 (https://example.com; myemail@example.com)"
 session = requests.Session()
 session.headers.update({'User-Agent': custom_user_agent})
 
-# Wikipedia-API-Objekt; Session explizit zuweisen, um Rate Limits zu respektieren
+# Wikipedia-API-Objekt
 wiki = wikipediaapi.Wikipedia(language='en', user_agent=custom_user_agent)
 wiki.session = session
 
-# === 4) CSVs einlesen ===
-file_path = 'series.csv'  # Pfad zur Serienliste (muss existieren)
-imdb_path = "imdb.csv"   # Pfad zur IMDb-Tabelle (muss existieren)
+# 4) CSV‑Daten (Serien + IMDb) einlesen und mergen.
+file_path = 'series.csv'
+imdb_path = "imdb.csv"
 
 data_incomplete = pd.read_csv(file_path)
 imdb = pd.read_csv(imdb_path)
@@ -109,9 +108,11 @@ imdb = pd.read_csv(imdb_path)
 data = pd.merge(data_incomplete, imdb, on='series', how='inner')
 df = pd.DataFrame(data)  # optional: falls weitere Pandas-Operationen geplant sind
 
-# === 5) Dokumente aufbauen und in den Index schreiben ===
+# 5) Für jede Serie: Wikipedia-Seite laden, TMDB-Daten per API ergänzen,
+# Dokument zusammenstellen und in den Index schreiben.
 # islice(..., 10) beschränkt auf die ersten 10 Einträge – bei Bedarf anpassen/entfernen
-for index, row in islice(data.iterrows(), 10):
+for index, row in islice(data.iterrows(), 300):
+#for index, row in data.iterrows():
     # Wikipedia-Titel aus der URL extrahieren und decodieren
     path = urlparse(row["wikipediaPage"]).path
     title_encoded = path.split("/")[-1]
@@ -163,12 +164,12 @@ for index, row in islice(data.iterrows(), 10):
                     doc.add_text("genres", genre)
                     doc.add_facet("facet_genres", Facet.from_string(f"/{genre.strip().strip('/')}"))
 
-            # === TMDB-Abfragen (auf Basis der IMDb-ID) ===
+            # TMDB-Abfragen (auf Basis der IMDb-ID)
             try:
                 response = requests.get(TMDB_API + row["imdb"] + SOURCE, headers=headers)
                 tmdb_json = json.loads(response.text)
 
-                # Prüfen, ob TV-Ergebnisse vorhanden sind (wir nehmen das erste)
+                # Prüfen, ob TV-Ergebnisse vorhanden sind (es wird das erste Ergebnis genommen)
                 if tmdb_json.get("tv_results"):
                     tmdb = tmdb_json["tv_results"][0]
 
@@ -199,6 +200,13 @@ for index, row in islice(data.iterrows(), 10):
                         doc.add_integer("tmdb_vote_count", tmdb_vote_count)
 
                     # Trailer-Key über zusätzliche TMDB-API (Videos) ermitteln
+                        # Trailer-Key über zusätzliche TMDB-API (Videos) ermitteln
+                    video_response = requests.get(
+                        TMDB_TRAILER_API + str(tmdb.get("id", "")) + "/videos", headers=headers
+                    )
+                    key = trailer.get_key(video_response.text)
+                    if isinstance(key, str):
+                        doc.add_text("trailer", key)
 
                 else:
                     print("No TV results found.")
@@ -217,6 +225,6 @@ for index, row in islice(data.iterrows(), 10):
         # Wikipedia-Seite existiert nicht – Eintrag überspringen
         print(str(index) + " Page does not exist.")
 
-# === 6) Index-Änderungen finalisieren ===
+# 6) Änderungen committen und Merge-Threads abwarten.
 writer.commit()                 # Schreibvorgänge bestätigen
 writer.wait_merging_threads()   # Hintergrund-Mergeprozesse abwarten
