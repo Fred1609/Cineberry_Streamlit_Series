@@ -48,7 +48,7 @@ index = Index(schema, path=str(INDEX_PATH))
 #index.reload()
 searcher = index.searcher()
 
-
+st.set_page_config(layout="wide")
 with open("styles.html", "r") as f:
     css = f.read()
 
@@ -71,100 +71,257 @@ view = qp.get("view")
 selected_id = qp.get("id")
 q = qp.get("q", "")  # <-- keep the query in the URL
 
-# Detail View
-if view == "detail" and selected_id:
-    q_t = index.parse_query(selected_id, ["id"])
-    detail_hits = searcher.search(q_t, 1).hits
-    detail_score, detail_address = detail_hits[0]
-    detail_doc = searcher.doc(detail_address)
-    detail_title = detail_doc["title"][0]
-    detail_overview_src = detail_doc["tmdb_overview"] or detail_doc["description"]
-    detail_overview = detail_overview_src[0]
-    detail_poster = detail_doc["tmdb_poster_path"]
-    detail_poster_url = (TMDB_PATH_SMALL + detail_poster[0]) if detail_poster else ""
-    trailer = detail_doc["trailer"]
-    video_key = detail_doc["trailer"][0] if trailer else ""
-    st.title(detail_title)
-    genres = detail_doc["genres"]
-    tags_html = "<div>"
-    if genres is not None:
-        for tag in genres:
-            tags_html += f'<span class="tag">{tag}</span>'
-        tags_html += "</div>"
-    st.markdown(tags_html, unsafe_allow_html=True)
-    if video_key != "":
-        st.video(f"https://www.youtube.com/watch?v={video_key}")
-    st.write(detail_overview)
 
-    if st.button("← Zurück zur Übersicht"):
-        st.query_params.update({"view": "grid"})
-        st.query_params.pop("id", None)
-        st.rerun()
-    st.stop()
+tab1, tab2, tab3 = st.tabs(["Home", "Stöbern", "Watchlist"])
+with tab1:
+# Columns definieren
+    # Detail View
+    if view == "detail" and selected_id:
+        q_t = index.parse_query(selected_id, ["id"])
+        detail_hits = searcher.search(q_t, 1).hits
+        detail_score, detail_address = detail_hits[0]
+        detail_doc = searcher.doc(detail_address)
+        detail_title = detail_doc["title"][0]
+        detail_overview_src = detail_doc["tmdb_overview"] or detail_doc["description"]
+        detail_overview = detail_overview_src[0]
+        detail_poster = detail_doc["tmdb_poster_path"]
+        detail_poster_url = (TMDB_PATH_SMALL + detail_poster[0]) if detail_poster else ""
+        trailer = detail_doc["trailer"]
+        video_key = detail_doc["trailer"][0] if trailer else ""
+        st.title(detail_title)
+        genres = detail_doc["genres"]
+        tags_html = "<div>"
+        if genres is not None:
+            for tag in genres:
+                tags_html += f'<span class="tag">{tag}</span>'
+            tags_html += "</div>"
+        st.markdown(tags_html, unsafe_allow_html=True)
+        stars=""
+        rating=4.5
+        for i in range(1,6):
+            # ein voller Stern wird hinzugefügt
+            if rating >= i:
+                stars += full_star
+            # rating liegt dazwischen (z.B. 3.8, 4.3 usw)
+            # ein halber Stern wird hinzugefügt
+            elif i-1 < rating < 1:
+                stars += half_star
+            # vergib einen leeren Stern
+            else:
+                stars += empty_star
+        print(stars)
+        st.markdown(f'<div style="display: inline-block;">{stars}</div>' ,
+                    unsafe_allow_html=True)
+        if video_key != "":
+            st.video(f"https://www.youtube.com/watch?v={video_key}")
+        st.write(detail_overview)
 
-# Hauptseite
-st.title("TV-Serien")
+        if st.button("← Zurück zur Übersicht"):
+            st.query_params.update({"view": "grid"})
+            st.query_params.pop("id", None)
+            st.rerun()
+        st.stop()
 
-# items = [10,25,33,42,102,111,124,298]
-# random_cards_html = []
-# for item in items:
-#     q_t = index.parse_query(str(item), ["id"])
-#     random_hits = searcher.search(q_t, 1).hits
-#     if random_hits:
-#         random_score, random_address = random_hits[0]
-#         random_doc = searcher.doc(random_address)
-#         random_title = random_doc["title"][0]
-#         random_poster = random_doc["tmdb_poster_path"]
-#         if random_poster:
-#             random_href = f"?view=detail&id={str(item)}&q={up.quote(q, safe='')}"
-#             random_img_url = TMDB_PATH + random_poster[0]
-#             random_img_tag = f'<img src="{random_img_url}" loading="lazy" alt="poster">'
-#             random_cards_html.append(
-#             f"""<a class="card" href="{random_href}" target="_self">{random_img_tag}<div class="t">{random_title}</div></a>""")
-# utils.display_random_items(random_cards_html)
+    # Hauptseite
+    st.title("TV-Serien")
 
-# Verarbeitet die aktuelle Anfrage (Query);
-query_text = st.text_input("Suchbegriff eingeben", value=q, placeholder="z. B. Breaking Bad, Dark, etc. ...")
-if st.button("Suchen", type="primary"):
-    if not query_text:
-        st.info("Bitte gib einen Suchbegriff ein.")
+    items = [10,25,33,42,102,111,124,298]
+    random_cards_html = []
+    for item in items:
+        q_t = index.parse_query(str(item), ["id"])
+        random_hits = searcher.search(q_t, 1).hits
+        if random_hits:
+            random_score, random_address = random_hits[0]
+            random_doc = searcher.doc(random_address)
+            random_title = random_doc["title"][0]
+            random_poster = random_doc["tmdb_poster_path"]
+            if random_poster:
+                random_href = f"?view=detail&id={str(item)}&q={up.quote(q, safe='')}"
+                random_img_url = TMDB_PATH + random_poster[0]
+                random_img_tag = f'<img src="{random_img_url}" loading="lazy" alt="poster">'
+                random_cards_html.append(
+                f"""<a class="card" href="{random_href}" target="_self">{random_img_tag}<div class="t">{random_title}</div></a>""")
+    utils.display_random_items(random_cards_html)
+
+    # Verarbeitet die aktuelle Anfrage (Query);
+    # query_text = st.text_input("Suchbegriff eingeben", value=q, placeholder="z. B. Breaking Bad, Dark, etc. ...")
+    # if st.button("Suchen", type="primary"):
+    #     if not query_text:
+    #         st.info("Bitte gib einen Suchbegriff ein.")
+    #
+    #     else:
+    #         # Speichert die Anfrageparameter und lädt die Seite erneut
+    #         st.query_params.update({"q": up.quote(query_text, safe=''), "view": "grid"})
+    #         st.rerun()
+    #
+    # with st.form("my_form"):
+    #     checkbox_val = st.checkbox("Checkbox")
+    #     submitted = st.form_submit_button("Submit")
+    #     if submitted:
+    #         st.session_state["checkbox"] = checkbox_val
+
+    # Raster (Grid) darstellen, wenn q existiert
+    if q:
+        unquoted_q = up.unquote(q).lower()
+        query = unquoted_q.strip()
+        terms = query.split()
+        boolean_parts = []
+        for term in terms:
+            u_q = index.parse_query(term, ["title"])  # uses en_stem for "title"
+            boolean_parts.append((Occur.Must, u_q))
+        boolean_query = Query.boolean_query(boolean_parts)
+        hits = searcher.search(boolean_query, 50).hits
+
+        if not hits:
+            st.warning("Keine Ergebnisse gefunden.")
+        else:
+            st.subheader("Ergebnisse")
+            # Erstelle das Grid mit klickbaren Thumbnails
+            cards_html = ['<div class="grid">']
+
+            for score, addr in hits:
+                doc = searcher.doc(addr)
+                doc_id = doc["id"][0]
+                title = doc["title"][0]
+                start = doc["start"][0] if doc["start"] else ""
+                poster = doc["tmdb_poster_path"]
+                poster_url = (TMDB_PATH_SMALL + poster[0]) if poster else ""
+                href = f"?view=detail&id={doc_id}&q={up.quote(q, safe='')}"
+                img_tag = f'<img src="{poster_url}" loading="lazy" alt="poster">' if poster_url else ""
+                cards_html.append(f"""<a class="card" href="{href}" target="_self">{img_tag}<div class="t">{title}</div></a>""")
+                #cards_html.append(
+                #    f"""<div class="card"><a href="{href}">{img_tag}<div class="t">{title}</div></a><div class="m">{start}</div></div>""")
+            cards_html.append("</div>")
+            st.markdown("".join(cards_html), unsafe_allow_html=True)
     else:
-        # Speichert die Anfrageparameter und lädt die Seite erneut
-        st.query_params.update({"q": up.quote(query_text, safe=''), "view": "grid"})
-        st.rerun()
+        st.info("Gib einen Suchbegriff ein und klicke auf **Suchen** (oder drücke Enter).")
 
-# Raster (Grid) darstellen, wenn q existiert
-if q:
-    unquoted_q = up.unquote(q).lower()
-    query = unquoted_q.strip()
-    terms = query.split()
-    boolean_parts = []
-    for term in terms:
-        u_q = index.parse_query(term, ["title"])  # uses en_stem for "title"
-        boolean_parts.append((Occur.Must, u_q))
-    boolean_query = Query.boolean_query(boolean_parts)
-    hits = searcher.search(boolean_query, 1).hits
+with tab2:
+    # Columns definieren
+    col1, col2 = st.columns([1,3], gap=None)
 
-    if not hits:
-        st.warning("Keine Ergebnisse gefunden.")
-    else:
-        st.subheader("Ergebnisse")
-        # Erstelle das Grid mit klickbaren Thumbnails
-        cards_html = ['<div class="grid">']
+    with col1:
+        st.title("Spalte 1")
+        # Verarbeitet die aktuelle Anfrage (Query);
+        query_text = st.text_input("Suchbegriff eingeben", value=q, placeholder="z. B. Breaking Bad, Dark, etc. ...")
+        if st.button("Suchen", type="primary"):
+            if not query_text:
+                st.info("Bitte gib einen Suchbegriff ein.")
+            else:
+                # Speichert die Anfrageparameter und lädt die Seite erneut
+                st.query_params.update({"q": up.quote(query_text, safe=''), "view": "grid"})
+                st.rerun()
 
-        for score, addr in hits:
-            doc = searcher.doc(addr)
-            doc_id = doc["id"][0]
-            title = doc["title"][0]
-            start = doc["start"][0] if doc["start"] else ""
-            poster = doc["tmdb_poster_path"]
-            poster_url = (TMDB_PATH_SMALL + poster[0]) if poster else ""
-            href = f"?view=detail&id={doc_id}&q={up.quote(q, safe='')}"
-            img_tag = f'<img src="{poster_url}" loading="lazy" alt="poster">' if poster_url else ""
-            cards_html.append(f"""<a class="card" href="{href}" target="_self">{img_tag}<div class="t">{title}</div></a>""")
-            #cards_html.append(
-            #    f"""<div class="card"><a href="{href}">{img_tag}<div class="t">{title}</div></a><div class="m">{start}</div></div>""")
-        cards_html.append("</div>")
-        st.markdown("".join(cards_html), unsafe_allow_html=True)
-else:
-    st.info("Gib einen Suchbegriff ein und klicke auf **Suchen** (oder drücke Enter).")
+        with st.form("my_form"):
+            checkbox_val = st.checkbox("Checkbox")
+            submitted = st.form_submit_button("Submit")
+            if submitted:
+                st.session_state["checkbox"] = checkbox_val
+
+        # Raster (Grid) darstellen, wenn q existiert
+        if q:
+            unquoted_q = up.unquote(q).lower()
+            query = unquoted_q.strip()
+            terms = query.split()
+            boolean_parts = []
+            for term in terms:
+                u_q = index.parse_query(term, ["title"])  # uses en_stem for "title"
+                boolean_parts.append((Occur.Must, u_q))
+            boolean_query = Query.boolean_query(boolean_parts)
+            hits = searcher.search(boolean_query, 50).hits
+
+            if not hits:
+                st.warning("Keine Ergebnisse gefunden.")
+            else:
+                st.subheader("Ergebnisse")
+                # Erstelle das Grid mit klickbaren Thumbnails
+                cards_html = ['<div class="grid">']
+
+                for score, addr in hits:
+                    doc = searcher.doc(addr)
+                    doc_id = doc["id"][0]
+                    title = doc["title"][0]
+                    start = doc["start"][0] if doc["start"] else ""
+                    poster = doc["tmdb_poster_path"]
+                    poster_url = (TMDB_PATH_SMALL + poster[0]) if poster else ""
+                    href = f"?view=detail&id={doc_id}&q={up.quote(q, safe='')}"
+                    img_tag = f'<img src="{poster_url}" loading="lazy" alt="poster">' if poster_url else ""
+                    cards_html.append(
+                        f"""<a class="card" href="{href}" target="_self">{img_tag}<div class="t">{title}</div></a>""")
+                    # cards_html.append(
+                    #    f"""<div class="card"><a href="{href}">{img_tag}<div class="t">{title}</div></a><div class="m">{start}</div></div>""")
+                cards_html.append("</div>")
+                st.markdown("".join(cards_html), unsafe_allow_html=True)
+
+        else:
+            st.info("Gib einen Suchbegriff ein und klicke auf **Suchen** (oder drücke Enter).")
+
+    with col2:
+        st.title("Spalte 2")
+        # Detail View
+        if view == "detail" and selected_id:
+            q_t = index.parse_query(selected_id, ["id"])
+            detail_hits = searcher.search(q_t, 1).hits
+            detail_score, detail_address = detail_hits[0]
+            detail_doc = searcher.doc(detail_address)
+            detail_title = detail_doc["title"][0]
+            detail_overview_src = detail_doc["tmdb_overview"] or detail_doc["description"]
+            detail_overview = detail_overview_src[0]
+            detail_poster = detail_doc["tmdb_poster_path"]
+            detail_poster_url = (TMDB_PATH_SMALL + detail_poster[0]) if detail_poster else ""
+            trailer = detail_doc["trailer"]
+            video_key = detail_doc["trailer"][0] if trailer else ""
+            st.title(detail_title)
+            genres = detail_doc["genres"]
+            tags_html = "<div>"
+            if genres is not None:
+                for tag in genres:
+                    tags_html += f'<span class="tag">{tag}</span>'
+                tags_html += "</div>"
+            st.markdown(tags_html, unsafe_allow_html=True)
+            stars = ""
+            rating = 4.5
+            for i in range(1, 6):
+                # ein voller Stern wird hinzugefügt
+                if rating >= i:
+                    stars += full_star
+                # rating liegt dazwischen (z.B. 3.8, 4.3 usw)
+                # ein halber Stern wird hinzugefügt
+                elif i - 1 < rating < 1:
+                    stars += half_star
+                # vergib einen leeren Stern
+                else:
+                    stars += empty_star
+            print(stars)
+            st.markdown(f'<div style="display: inline-block;">{stars}</div>',
+                        unsafe_allow_html=True)
+            if video_key != "":
+                st.video(f"https://www.youtube.com/watch?v={video_key}")
+            st.write(detail_overview)
+
+            if st.button("← Zurück zur Übersicht"):
+                st.query_params.update({"view": "grid"})
+                st.query_params.pop("id", None)
+                st.rerun()
+            st.stop()
+
+        # Hauptseite
+        st.title("TV-Serien")
+
+        # items = [10, 25, 33, 42, 102, 111, 124, 298]
+        # random_cards_html = []
+        # for item in items:
+        #     q_t = index.parse_query(str(item), ["id"])
+        #     random_hits = searcher.search(q_t, 1).hits
+        #     if random_hits:
+        #         random_score, random_address = random_hits[0]
+        #         random_doc = searcher.doc(random_address)
+        #         random_title = random_doc["title"][0]
+        #         random_poster = random_doc["tmdb_poster_path"]
+        #         if random_poster:
+        #             random_href = f"?view=detail&id={str(item)}&q={up.quote(q, safe='')}"
+        #             random_img_url = TMDB_PATH + random_poster[0]
+        #             random_img_tag = f'<img src="{random_img_url}" loading="lazy" alt="poster">'
+        #             random_cards_html.append(
+        #                 f"""<a class="card" href="{random_href}" target="_self">{random_img_tag}<div class="t">{random_title}</div></a>""")
+        # utils.display_random_items(random_cards_html)

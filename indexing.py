@@ -108,6 +108,11 @@ imdb = pd.read_csv(imdb_path)
 data = pd.merge(data_incomplete, imdb, on='series', how='inner')
 df = pd.DataFrame(data)  # optional: falls weitere Pandas-Operationen geplant sind
 
+# NEU: genres und countries Listen
+# all_genres_set = set()
+# all_countries_set = set()
+
+
 # 5) Für jede Serie: Wikipedia-Seite laden, TMDB-Daten per API ergänzen,
 # Dokument zusammenstellen und in den Index schreiben.
 # islice(..., 10) beschränkt auf die ersten 10 Einträge – bei Bedarf anpassen/entfernen
@@ -156,13 +161,17 @@ for index, row in islice(data.iterrows(), 300):
 
             if pd.notna(row["countries"]):
                 for country in str(row["countries"]).split(", "):
+                    # country_clean = country.strip()
                     doc.add_text("countries", country)
                     doc.add_facet("facet_countries", Facet.from_string(f"/{country.strip().strip('/')}"))
+                    # all_countries_set.add(country_clean)
 
             if pd.notna(row["genres"]):
                 for genre in str(row["genres"]).split(", "):
+                    # genre_clean = genre.strip()
                     doc.add_text("genres", genre)
                     doc.add_facet("facet_genres", Facet.from_string(f"/{genre.strip().strip('/')}"))
+                    # all_genres_set.add(genre_clean)
 
             # TMDB-Abfragen (auf Basis der IMDb-ID)
             try:
@@ -227,4 +236,17 @@ for index, row in islice(data.iterrows(), 300):
 
 # 6) Änderungen committen und Merge-Threads abwarten.
 writer.commit()                 # Schreibvorgänge bestätigen
+
+
+# NEU: genres und countries JSON erzeugen
+# with open("genres.json", "w", encoding="utf-8") as f:
+#     json.dump(sorted(list(all_genres_set)), f, ensure_ascii=False, indent=2)
+#
+# with open("countries.json", "w", encoding="utf-8") as f:
+#     json.dump(sorted(list(all_countries_set)), f, ensure_ascii=False, indent=2)
+#
+# print(f"Genres.json erzeugt: {sorted(list(all_genres_set))}")
+# print(f"Countries.json erzeugt: {sorted(list(all_countries_set))}")
+
+
 writer.wait_merging_threads()   # Hintergrund-Mergeprozesse abwarten

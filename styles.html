@@ -4,21 +4,22 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 14px;
+  gap: 2em;
 }
 .card {
-  background: #fff;
+  position: relative;
+  background: #33212d;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.5);
   transition: transform .08s ease, box-shadow .08s ease;
-  text-decoration: none;
+  text-decoration: none !important;
   color: inherit;
   display: block;
 }
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(,0,0,.12);
 }
 .card img {
   width: 100%;
@@ -27,12 +28,28 @@
   display: block;
 }
 .card .t {
-  padding: 6px 8px;
-  font-size: .9rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 6px 8px;
+    font-size: .9rem;
+    font-weight: 500;
+    color: #ccc;
+    text-decoration: none !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(0, 0, 0, 0.7);
+    max-height: 40px;
+    transition: max-height 0.3s ease;
+}
+.card:hover .t {
+    padding-top: 2em;
+    padding-bottom: 2em;
+    overflow: auto;
+    white-space: normal;
+    max-height: 120px;
+    background-color: rgba(0, 0, 0, 0.9);
 }
 .card .m {
   padding: 0 8px 8px;
@@ -48,19 +65,66 @@
   font-size: 24px;
 }
 .random-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, 140px);
-  justify-content: center;
-  gap: 14px;
-  margin: 0 auto;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2em;
+    overflow-x: auto;
+    padding: 25px;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(200, 200, 200, 0.3) transparent;
+    scroll-snap-type: x mandatory;
+}
+.random-grid > .card {
+    scroll-snap-align: start;
+}
+.random-grid .card {
+    flex: 0 0 160px;
+    width: 160px;
+}
+.st-key-prev > div > button,
+.st-key-next > div > button {
+   background-color: violet;
+   color: white
+}
+[data-baseweb="base-input"] {
+    background-color: #33212d;
+}
+[data-baseweb="notification"] {
+    background-color: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.8);
+    color: rgba(255,255,255,0.8);
+}
+[data-testid="stBaseButton-primary"] {
+    background-color: #ff4b4b;
+    color: #f0f2f6;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    align-items: center;
+}
+[data-testid="stBaseButton-primary"]:hover {
+    background-color: rgba(200, 50, 50);
+    color: rgba(240, 242, 246);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 .tag {
   display: inline-block;
   background-color: rgb(240, 240, 242);
   color: black;
   padding: 5px;
-  margin: 2px;
-  margin-bottom: 10px;
+  margin: 5px 5px 5px 0;
   border-radius: 3px;
+}
+div[role="dialog"] {
+    min-width: 50%;
+    max-width: 1000px;
+    margin-top: 3em;
+}
+button[aria-label="Close"] {
+    outline: none !important;
+    width: 50px;
+    height: 50px;
+}
+button[aria-label="Close"] svg {
+    width: 20px;
+    height: 20px;
 }
 </style>
