@@ -207,7 +207,7 @@ def display_series_cards(hits, title="Serien", randomize=False, sort_key=None, r
 # Zufällige Serien
 display_series_cards(all_hits, title="Lass den Zufall entscheiden", randomize=True)
 
-# Beliebteste Serien (nach Score)
+# Neueste Serien (nach Start)
 display_series_cards(all_hits, title="Neueste Serien", sort_key=lambda x: float(searcher.doc(x[1])["start"][0]) if searcher.doc(x[1])["start"] else 0)
 
 # Beliebteste Serien (nach Score)
