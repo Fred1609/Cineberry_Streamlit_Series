@@ -165,9 +165,10 @@ st.markdown(
 
 all_hits = searcher.search(Query.all_query(), 500).hits
 
-def display_series_cards(hits, title="Serien", limit=12, randomize=False, sort_key=None, reverse=True):
+def display_series_cards(hits, title="Serien", randomize=False, sort_key=None, reverse=True):
 
     cards_html = []
+    limit = 12
 
     hits_to_show = hits.copy()
     if randomize:
@@ -204,10 +205,10 @@ def display_series_cards(hits, title="Serien", limit=12, randomize=False, sort_k
     utils.display_random_items(cards_html)
 
 # Zufällige Serien
-display_series_cards(all_hits, title="Lass den Zufall entscheiden", limit=12, randomize=True)
+display_series_cards(all_hits, title="Lass den Zufall entscheiden", randomize=True)
 
 # Beliebteste Serien (nach Score)
-display_series_cards(all_hits, title="Neueste Serien", limit=12, sort_key=lambda x: float(searcher.doc(x[1])["start"][0]) if searcher.doc(x[1])["start"] else 0)
+display_series_cards(all_hits, title="Neueste Serien", sort_key=lambda x: float(searcher.doc(x[1])["start"][0]) if searcher.doc(x[1])["start"] else 0)
 
 # Beliebteste Serien (nach Score)
-display_series_cards(all_hits, title="Beliebteste Serien", limit=12, sort_key=lambda x: float(searcher.doc(x[1])["tmdb_popularity"][0]) if searcher.doc(x[1])["tmdb_popularity"] else 0)
+display_series_cards(all_hits, title="Beliebteste Serien", sort_key=lambda x: float(searcher.doc(x[1])["tmdb_popularity"][0]) if searcher.doc(x[1])["tmdb_popularity"] else 0)
