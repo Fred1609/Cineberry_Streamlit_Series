@@ -159,7 +159,7 @@ if view == "detail" and selected_id:
 # ----- Hauptseite – Random Cards -----
 
 st.markdown(
-    "<h1 style='text-align:center; margin-top:-2em;'>Cineberry - Home</h1>",
+    "<h1 style='text-align:center; margin-top:-2em;'>CineBerry - Home</h1>",
     unsafe_allow_html=True
 )
 
